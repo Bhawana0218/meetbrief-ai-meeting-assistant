@@ -208,7 +208,7 @@ function Write-CapturedTurn {
         $existing = [regex]::Replace($existing, '(?m)^last_prompt_time:\s*.+\s*$', "last_prompt_time: $promptTimestamp", 1)
         $entry = "`r`n`r`n[LOG_ENTRY type=PROMPT num=$exchangeNumber session=$SessionId]`r`ntimestamp: $promptTimestamp`r`nmodel: $model`r`n`r`n$Prompt`r`n`r`n[LOG_ENTRY type=RESPONSE num=$exchangeNumber session=$SessionId]`r`ntimestamp: $responseTimestamp`r`nmodel: $model`r`n`r`n$Response`r`n"
         [System.IO.File]::WriteAllText($logPath, $existing + $entry, [System.Text.UTF8Encoding]::new($false))
-        return
+        return $logPath
     }
 
     $header = @"
@@ -243,6 +243,25 @@ model: $model
 $Response
 "@
     [System.IO.File]::WriteAllText($logPath, $header + "`r`n", [System.Text.UTF8Encoding]::new($false))
+    return $logPath
+}
+
+function Commit-CapturedLog {
+    param(
+        [string]$RepoRoot,
+        [string]$LogPath
+    )
+
+    $relativePath = '.agent-logs/' + [System.IO.Path]::GetFileName($LogPath)
+    $gitOutput = & git -C $RepoRoot add -- $relativePath 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "Could not stage captured log: $($gitOutput -join [Environment]::NewLine)"
+    }
+
+    $gitOutput = & git -C $RepoRoot commit -m 'Capture agent session turn' -m 'Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>' --only -- $relativePath 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "Could not commit captured log: $($gitOutput -join [Environment]::NewLine)"
+    }
 }
 
 try {
@@ -294,7 +313,8 @@ try {
             $response = Get-FinalResponse -TranscriptPath $transcriptPath
         }
         $promptTime = [DateTimeOffset]::Parse([string]$pending.promptTime).UtcDateTime
-        Write-CapturedTurn -SessionId $sessionId -PromptTime $promptTime -ResponseTime $timestamp -Prompt ([string]$pending.prompt) -Response $response
+        $logPath = Write-CapturedTurn -SessionId $sessionId -PromptTime $promptTime -ResponseTime $timestamp -Prompt ([string]$pending.prompt) -Response $response
+        Commit-CapturedLog -RepoRoot (Get-Location).Path -LogPath $logPath
         Remove-Item -LiteralPath $pendingPath
     } else {
         throw "Unsupported hook event: $hookEvent"

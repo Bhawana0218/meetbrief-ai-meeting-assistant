@@ -46,6 +46,6 @@ Second canary received.
 
 The initial bare canary prompt caused the agent to ask for clarification instead of producing a final response, so it did not create a completed log entry and was not counted as a passing canary. I then added an explicit response instruction. That first probe also exposed a Windows stdin encoding issue that mangled the em dash in temporary pending state; the hook now reads stdin as UTF-8. Both successful logs preserve the em dash correctly.
 
-The original setup conversation began before the hook was installed and therefore was not captured automatically. No transcript was backfilled or manually added.
+The original setup conversation began before the hook was installed and therefore was not captured automatically. No transcript was backfilled or manually added. Capture verification passed before MeetBrief application development began.
 
-No application development has started.
+Completed application-turn logs are now committed individually by the stop hook after each response, keeping the capture history in the repository as work progresses.
