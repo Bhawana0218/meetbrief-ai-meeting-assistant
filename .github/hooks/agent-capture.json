@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "type": "command",
+        "powershell": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .github/hooks/capture-agent-turn.ps1",
+        "cwd": ".",
+        "timeoutSec": 30
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "powershell": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .github/hooks/capture-agent-turn.ps1",
+        "cwd": ".",
+        "timeoutSec": 30
+      }
+    ]
+  }
+}
