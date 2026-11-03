@@ -16,8 +16,11 @@ const navigation: { label: string; href: string; icon: IconName }[] = [
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { meetings: extraMeetings, storageError } = useMeetBrief();
-  const meetings = useMemo(() => getMeetings(extraMeetings), [extraMeetings]);
+  const { meetings: extraMeetings, summaries, storageError } = useMeetBrief();
+  const meetings = useMemo(
+    () => getMeetings(extraMeetings).map((meeting) => summaries[meeting.id] ? { ...meeting, summary: summaries[meeting.id] } : meeting),
+    [extraMeetings, summaries],
+  );
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -103,17 +106,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="app-frame">
       {menuOpen && <button className="mobile-scrim" aria-label="Close navigation" onClick={() => setMenuOpen(false)} />}
-      <aside className={`sidebar ${menuOpen ? "sidebar-open" : ""}`}>
+      <aside id="main-sidebar" className={`sidebar ${menuOpen ? "sidebar-open" : ""}`}>
         <Link className="brand" href="/" onClick={() => setMenuOpen(false)}>
           <span className="brand-mark"><Icon name="logo" size={23} strokeWidth={1.7} /></span>
-          <span>meetbrief<span className="brand-period">.</span></span>
+          <span className="brand-wordmark"><span>meetbrief<span className="brand-period">.</span></span><small>MEETING INTELLIGENCE</small></span>
         </Link>
         <div className="workspace-switcher">
           <div className="workspace-avatar">S</div>
           <div className="workspace-copy"><strong>Studio North</strong><span>Free workspace</span></div>
           <Icon name="down" size={15} className="muted-icon" />
         </div>
-        <p className="nav-label">WORKSPACE</p>
+        <p className="nav-label">LIBRARY</p>
         <nav className="main-nav" aria-label="Main navigation">
           {navigation.map((item) => {
             const active =
@@ -127,6 +130,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 key={item.href}
                 href={item.href}
                 className={`nav-link ${active ? "nav-link-active" : ""}`}
+                aria-current={active ? "page" : undefined}
                 onClick={() => setMenuOpen(false)}
               >
                 <Icon name={item.icon} size={18} />
@@ -135,14 +139,18 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
-          <Link className={`nav-link ${pathname.startsWith("/search") ? "nav-link-active" : ""}`} href="/search" onClick={() => setMenuOpen(false)}>
+          <Link className={`nav-link ${pathname.startsWith("/search") ? "nav-link-active" : ""}`} aria-current={pathname.startsWith("/search") ? "page" : undefined} href="/search" onClick={() => setMenuOpen(false)}>
             <Icon name="search" size={18} /><span>Search all</span>
+          </Link>
+          <p className="nav-label nav-label-tools">YOUR TOOLS</p>
+          <Link className={`nav-link ${pathname.startsWith("/record") ? "nav-link-active" : ""}`} aria-current={pathname.startsWith("/record") ? "page" : undefined} href="/record" onClick={() => setMenuOpen(false)}>
+            <Icon name="mic" size={18} /><span>Capture notes</span><span className="nav-beta">DEMO</span>
           </Link>
         </nav>
         <div className="sidebar-bottom">
           <div className="capture-note">
             <span className="capture-icon"><Icon name="mic" size={16} /></span>
-            <div><strong>Catch every detail</strong><span>Capture a meeting</span></div>
+            <div><strong>Keep the context</strong><span>Manual-notes demo</span></div>
             <Link href="/record" className="capture-arrow" aria-label="Start a demo capture"><Icon name="arrow" size={15} /></Link>
           </div>
           <div className="profile-row">
@@ -157,7 +165,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
       <div className="main-column">
         <header className="topbar">
-          <button className="mobile-menu icon-button" aria-label="Open navigation" onClick={() => setMenuOpen(true)}><Icon name="menu" /></button>
+          <button className="mobile-menu icon-button" aria-label={menuOpen ? "Close navigation" : "Open navigation"} aria-expanded={menuOpen} aria-controls="main-sidebar" onClick={() => setMenuOpen((open) => !open)}><Icon name={menuOpen ? "close" : "menu"} /></button>
           <div className="breadcrumb"><span>Studio North</span><Icon name="chevron" size={14} /><strong>{pageTitle}</strong></div>
           <div className="topbar-actions">
             <div className="global-search-wrap" ref={searchWrapRef}>
@@ -184,7 +192,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   onFocus={() => setSearchOpen(true)}
                   onChange={(event) => { setSearch(event.target.value); setSearchOpen(true); }}
                 />
-                <kbd>⌘ K</kbd>
+                <kbd>Ctrl/⌘ K</kbd>
               </form>
               {searchOpen && search.trim().length >= 2 && (
                 <div className="search-popover">
@@ -201,7 +209,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               )}
             </div>
             <div className="notification-wrap">
-              <button className="icon-button notification-button" aria-label="Notifications" onClick={() => setNoticeOpen((open) => !open)}><Icon name="bell" size={19} /><span /></button>
+              <button className="icon-button notification-button" aria-label="Notifications" aria-expanded={noticeOpen} onClick={() => setNoticeOpen((open) => !open)}><Icon name="bell" size={19} /><span /></button>
               {noticeOpen && <div className="notification-popover"><strong>You’re all caught up</strong><p>New meeting notes and follow-ups will show up here.</p><button onClick={() => setNoticeOpen(false)}>Got it</button></div>}
             </div>
             <Link className="button button-primary top-record" href="/record"><Icon name="mic" size={16} /> Record</Link>

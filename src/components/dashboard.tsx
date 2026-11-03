@@ -19,8 +19,11 @@ function matchesFilter(meeting: Meeting, filter: DashboardFilter) {
 }
 
 export function Dashboard() {
-  const { meetings: extraMeetings, completedActions } = useMeetBrief();
-  const meetings = useMemo(() => getMeetings(extraMeetings), [extraMeetings]);
+  const { meetings: extraMeetings, summaries, completedActions, setActionCompleted } = useMeetBrief();
+  const meetings = useMemo(
+    () => getMeetings(extraMeetings).map((meeting) => summaries[meeting.id] ? { ...meeting, summary: summaries[meeting.id] } : meeting),
+    [extraMeetings, summaries],
+  );
   const [filter, setFilter] = useState<DashboardFilter>("All meetings");
   const [query, setQuery] = useState("");
   const [showAll, setShowAll] = useState(false);
@@ -34,10 +37,19 @@ export function Dashboard() {
     return matchesFilter(meeting, filter) && searchText.includes(query.trim().toLowerCase());
   });
   const recent = showAll ? matching : matching.slice(0, 4);
-  const weekMeetings = meetings.filter((meeting) => meeting.date >= "2026-10-28" && meeting.date < "2026-11-04");
+  const weekEnd = new Date();
+  weekEnd.setHours(23, 59, 59, 999);
+  const weekStart = new Date(weekEnd);
+  weekStart.setDate(weekStart.getDate() - 6);
+  weekStart.setHours(0, 0, 0, 0);
+  const weekMeetings = meetings.filter((meeting) => {
+    const date = new Date(meeting.date);
+    return date >= weekStart && date <= weekEnd;
+  });
   const weekMinutes = weekMeetings.reduce((total, meeting) => total + meeting.durationSeconds, 0) / 60;
   const weekDays = Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(2026, 9, 28 + index);
+    const date = new Date(weekStart);
+    date.setDate(weekStart.getDate() + index);
     const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
     const dayMeetings = weekMeetings.filter((meeting) => meeting.date.slice(0, 10) === dateKey);
     const minutes = dayMeetings.reduce((total, meeting) => total + meeting.durationSeconds, 0) / 60;
@@ -52,73 +64,95 @@ export function Dashboard() {
     meeting.summary.actions.map((action) => ({ ...action, meeting })),
   );
   const openActions = actions.filter((action) => !completedActions[action.id]);
-  const upcoming = openActions.slice(0, 3);
+  const upcoming = openActions.slice(0, 4);
+  const totalSeconds = meetings.reduce((total, meeting) => total + meeting.durationSeconds, 0);
+  const decisionCount = meetings.reduce((total, meeting) => total + meeting.summary.decisions.length, 0);
+  const todayLabel = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric" }).format(new Date());
 
   return (
     <AppShell>
       <div className="dashboard-page">
-        <PageHeading
-          eyebrow="TUESDAY, NOVEMBER 3"
-          title={<>Welcome back, Bhawana<span className="heading-period">.</span></>}
-          description="Your conversations, decisions, and next steps — all in one place."
-          actions={<Link className="button button-primary" href="/record"><Icon name="mic" size={16} /> Capture a meeting</Link>}
-        />
-        <section className="overview-grid" aria-label="Weekly overview">
-          <div className="overview-card overview-card-featured">
-            <div className="overview-card-label"><span className="overview-icon icon-peach"><Icon name="calendar" size={17} /></span><span>This week</span><span className="overview-tag">Oct 28 – Nov 3</span></div>
-            <div className="overview-number">{weekMeetings.length}<span> meetings</span></div>
-            <p>{formatDuration(Math.round(weekMinutes * 60))} of conversations, ready when you are.</p>
-            <div className="week-visual" role="img" aria-label="Meeting minutes by day this week">
+        <section className="intelligence-hero">
+          <div className="intelligence-hero-copy">
+            <div className="hero-overline"><span className="hero-overline-dot" /> MEETING INTELLIGENCE <span className="hero-overline-separator">/</span> {todayLabel.toUpperCase()}</div>
+            <h1>Make every conversation<br /><em>move work forward.</em></h1>
+            <p>Good conversations deserve a better afterlife. Find the signal, keep the context, and know what happens next.</p>
+            <div className="hero-actions">
+              <Link className="button button-hero-primary" href="/record"><Icon name="mic" size={16} /> Capture a meeting <Icon name="arrow" size={14} /></Link>
+              <Link className="hero-secondary-link" href="/meetings">Explore your library <Icon name="arrow" size={14} /></Link>
+            </div>
+            <div className="hero-proof"><span className="hero-proof-avatars"><AvatarStack participants={meetings[0]?.participants ?? []} limit={3} /></span><span><strong>{meetings.length} conversations</strong> in your demo workspace</span></div>
+          </div>
+          <div className="hero-intelligence-card">
+            <div className="hero-card-top"><span><Icon name="sparkles" size={15} /> THE SIGNAL, NOT THE NOISE</span><span className="hero-demo-label">SAMPLE DATA</span></div>
+            <div className="hero-insight-number">{String(weekMeetings.length).padStart(2, "0")}<span> conversations<br />in the last 7 days</span></div>
+            <div className="hero-chart" role="img" aria-label={`Meeting time across the last seven days, totaling ${formatDuration(Math.round(weekMinutes * 60))}`}>
               {weekDays.map((day) => {
-                const dayLabel = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(day.date);
+                const dayLabel = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric" }).format(day.date);
                 const description = `${dayLabel}: ${day.meetings} ${day.meetings === 1 ? "meeting" : "meetings"}, ${Math.round(day.minutes)} minutes`;
-                return <span key={day.date.toISOString()} title={description} aria-label={description} style={{ height: `${day.minutes === 0 ? 3 : Math.max(12, (day.minutes / maxDayMinutes) * 100)}%` }} />;
+                return <span key={day.date.toISOString()} title={description} style={{ "--bar-height": `${day.minutes === 0 ? 5 : Math.max(14, (day.minutes / maxDayMinutes) * 100)}%` } as React.CSSProperties}><i /></span>;
               })}
             </div>
-            <div className="week-axis"><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span><span>MON</span><span>TUE</span></div>
+            <div className="hero-chart-labels">{weekDays.map((day) => <span key={day.date.toISOString()}>{new Intl.DateTimeFormat("en-US", { weekday: "narrow" }).format(day.date)}</span>)}</div>
+            <div className="hero-chart-foot"><span><span className="hero-chart-legend" /> Minutes discussed</span><strong>{formatDuration(Math.round(weekMinutes * 60))}</strong></div>
           </div>
-          <div className="overview-card overview-card-actions">
-            <div className="overview-card-label"><span className="overview-icon icon-green"><Icon name="checkCircle" size={17} /></span><span>Action items</span></div>
-            <div className="overview-number">{openActions.length}<span> to follow up</span></div>
-            <p>Small next steps, already pulled out of your meetings.</p>
-            <div className="action-preview">
-              {upcoming.map((action) => (
-                <Link key={action.id} className="action-preview-row" href={`/meetings/${action.meeting.id}`}>
-                  <span className="tiny-check" />
-                  <span className="action-preview-copy"><strong>{action.text}</strong><small>{action.owner || "Owner not specified"} · {action.meeting.title}</small></span>
-                </Link>
-              ))}
-            </div>
-            <Link href="/meetings" className="text-link">View all meetings <Icon name="chevron" size={14} /></Link>
-          </div>
+          <span className="hero-orbit hero-orbit-one" aria-hidden="true" />
+          <span className="hero-orbit hero-orbit-two" aria-hidden="true" />
         </section>
 
-        <div className="section-heading">
-          <div><h2>Recent meetings</h2><p>A little context goes a long way.</p></div>
-          <Link href="/meetings" className="text-link">All meetings <Icon name="chevron" size={15} /></Link>
+        <section className="dashboard-metrics" aria-label="Demo workspace overview">
+          <article className="metric-card"><span className="metric-icon metric-icon-blue"><Icon name="calendar" size={17} /></span><div><span className="metric-label">CONVERSATIONS</span><strong>{meetings.length}</strong><small>in your library</small></div></article>
+          <article className="metric-card"><span className="metric-icon metric-icon-violet"><Icon name="clock" size={17} /></span><div><span className="metric-label">TIME TOGETHER</span><strong>{(totalSeconds / 3600).toFixed(1)}<small className="metric-unit"> hrs</small></strong><small>across all conversations</small></div></article>
+          <article className="metric-card"><span className="metric-icon metric-icon-cyan"><Icon name="checkCircle" size={17} /></span><div><span className="metric-label">OPEN FOLLOW-UPS</span><strong>{openActions.length}</strong><small>ready for a next step</small></div></article>
+          <article className="metric-card"><span className="metric-icon metric-icon-amber"><Icon name="sparkles" size={17} /></span><div><span className="metric-label">DECISIONS</span><strong>{decisionCount}</strong><small>captured in meeting notes</small></div></article>
+          <p className="metrics-disclosure"><Icon name="info" size={13} /> Counts are calculated from the sample meetings in this browser.</p>
+        </section>
+
+        <div className="dashboard-main-grid">
+          <section className="dashboard-library">
+            <div className="section-heading">
+              <div><span className="section-eyebrow">YOUR CONVERSATION MEMORY</span><h2>Recent meetings</h2><p>Context that keeps the work moving.</p></div>
+              <Link href="/meetings" className="text-link">View all <Icon name="arrow" size={14} /></Link>
+            </div>
+            <div className="meeting-toolbar">
+              <div className="filter-pills" role="group" aria-label="Filter meetings">
+                {filters.map((item) => <button key={item} className={`filter-pill ${filter === item ? "filter-pill-active" : ""}`} onClick={() => setFilter(item)}>{item}</button>)}
+              </div>
+              <label className="inline-search"><Icon name="search" size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Filter meetings" aria-label="Filter recent meetings" /></label>
+            </div>
+            {recent.length > 0 ? (
+              <div className="meeting-grid">
+                {recent.map((meeting) => <MeetingCard key={meeting.id} meeting={meeting} />)}
+              </div>
+            ) : (
+              <EmptyState icon="search" title="No meetings found" description="Try a different search or filter." action={<button className="button button-secondary" onClick={() => { setQuery(""); setFilter("All meetings"); }}>Clear filters</button>} />
+            )}
+            {matching.length > 4 && !showAll && <button className="button button-secondary load-more" onClick={() => setShowAll(true)}>Show all {matching.length} meetings</button>}
+          </section>
+
+          <aside className="followup-panel">
+            <div className="followup-panel-heading"><span className="followup-panel-icon"><Icon name="check" size={17} /></span><div><span className="section-eyebrow">KEEP THE MOMENTUM</span><h2>Up next</h2></div><span className="followup-count">{openActions.length}</span></div>
+            <p className="followup-panel-intro">Follow-ups from your conversations, ready when you are.</p>
+            {upcoming.length ? <div className="followup-list">{upcoming.map((action) => (
+              <div key={action.id} className="followup-item">
+                <button className="followup-check" aria-label={`Mark complete: ${action.text}`} onClick={() => setActionCompleted(action.id, true)}><Icon name="check" size={13} /></button>
+                <div className="followup-item-copy"><Link href={`/meetings/${action.meeting.id}`} className="followup-task">{action.text}</Link><span>{action.owner || "Owner not specified"}{action.due ? <><i>·</i>{action.due}</> : null}</span><Link href={`/meetings/${action.meeting.id}`} className="followup-source"><Icon name="file" size={12} />{action.meeting.title}</Link></div>
+              </div>
+            ))}</div> : <div className="followup-empty"><Icon name="checkCircle" size={21} /><strong>You’re all caught up</strong><span>Every recorded follow-up is complete.</span></div>}
+            <Link href="/meetings" className="followup-footer">Open meeting library <Icon name="arrow" size={14} /></Link>
+          </aside>
         </div>
-        <div className="meeting-toolbar">
-          <div className="filter-pills" role="group" aria-label="Filter meetings">
-            {filters.map((item) => <button key={item} className={`filter-pill ${filter === item ? "filter-pill-active" : ""}`} onClick={() => setFilter(item)}>{item}</button>)}
-          </div>
-          <label className="inline-search"><Icon name="search" size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Filter meetings" aria-label="Filter recent meetings" /></label>
-        </div>
-        {recent.length > 0 ? (
-          <div className="meeting-grid">
-            {recent.map((meeting) => <MeetingCard key={meeting.id} meeting={meeting} />)}
-          </div>
-        ) : (
-          <EmptyState icon="search" title="No meetings found" description="Try a different search or filter." action={<button className="button button-secondary" onClick={() => { setQuery(""); setFilter("All meetings"); }}>Clear filters</button>} />
-        )}
-        {matching.length > 4 && !showAll && <button className="button button-secondary load-more" onClick={() => setShowAll(true)}>Show all {matching.length} meetings</button>}
       </div>
     </AppShell>
   );
 }
 
 export function MeetingsList() {
-  const { meetings: extraMeetings } = useMeetBrief();
-  const meetings = useMemo(() => getMeetings(extraMeetings), [extraMeetings]);
+  const { meetings: extraMeetings, summaries } = useMeetBrief();
+  const meetings = useMemo(
+    () => getMeetings(extraMeetings).map((meeting) => summaries[meeting.id] ? { ...meeting, summary: summaries[meeting.id] } : meeting),
+    [extraMeetings, summaries],
+  );
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<"All types" | MeetingKind>("All types");
   const kinds: ("All types" | MeetingKind)[] = ["All types", "Customer call", "Internal sync", "Stand-up", "Interview", "Project review"];
@@ -187,15 +221,17 @@ export function HighlightsPage() {
 
   return (
     <AppShell>
-      <div className="content-page">
-        <PageHeading eyebrow="MOMENTS WORTH KEEPING" title="Highlights" description="The moments you saved, ready to revisit in their original conversation." />
+      <div className="content-page highlights-page">
+        <PageHeading eyebrow="A LIBRARY OF SIGNAL" title="Ideas worth keeping" description="A curated trail of the moments, decisions, and customer signals you chose to save." />
+        <div className="highlights-intro"><span className="highlights-intro-mark"><Icon name="bookmark" size={18} /></span><span><strong>{allHighlights.length} moments, kept in context</strong><small>Every highlight opens at its original place in the conversation.</small></span><span className="highlights-intro-demo">SAMPLE + SAVED</span></div>
         {allHighlights.length ? (
-          <div className="highlight-grid">
+          <div className="highlight-grid knowledge-grid">
             {allHighlights.map((highlight) => (
-              <Link href={`/meetings/${highlight.meeting.id}?t=${highlight.seconds}`} className="highlight-card" key={highlight.id}>
-                <span className="highlight-play"><Icon name="play" size={15} /></span>
-                <span className="highlight-copy"><span className="highlight-label">{highlight.label} <span>· {formatTimestamp(highlight.seconds)}</span></span><strong>{highlight.note}</strong><small>{highlight.meeting.title}</small></span>
-                <span className="highlight-date">{formatMeetingDate(highlight.meeting.date)}</span>
+              <Link href={`/meetings/${highlight.meeting.id}?t=${highlight.seconds}`} className="highlight-card knowledge-card" key={highlight.id}>
+                <span className="knowledge-quote-mark" aria-hidden="true">“</span>
+                <span className="knowledge-card-label">{highlight.label}<span>{highlight.seeded ? "SAMPLE" : "SAVED"}</span></span>
+                <strong className="knowledge-quote">{highlight.note}</strong>
+                <span className="knowledge-card-footer"><span>{highlight.meeting.transcript.filter((line) => line.seconds <= highlight.seconds).pop()?.speaker ?? "Meeting moment"}</span><small>{highlight.meeting.title}</small></span><span className="knowledge-card-time">{formatMeetingDate(highlight.meeting.date)}<i>{formatTimestamp(highlight.seconds)} <Icon name="arrow" size={13} /></i></span>
               </Link>
             ))}
           </div>

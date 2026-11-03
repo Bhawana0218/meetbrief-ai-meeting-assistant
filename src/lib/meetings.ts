@@ -334,8 +334,11 @@ export function formatTimestamp(seconds: number) {
 
 export function formatMeetingDate(value: string) {
   const date = new Date(value);
-  const now = new Date("2026-11-03T12:00:00");
-  if (date.toDateString() === now.toDateString()) return "Today";
-  if (date.toDateString() === new Date("2026-11-02T12:00:00").toDateString()) return "Yesterday";
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const meetingDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const dayDifference = Math.round((today.getTime() - meetingDay.getTime()) / 86_400_000);
+  if (dayDifference === 0) return "Today";
+  if (dayDifference === 1) return "Yesterday";
   return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(date);
 }

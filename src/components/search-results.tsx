@@ -8,9 +8,19 @@ import { useMeetBrief } from "@/components/meetbrief-provider";
 import { EmptyState, KindBadge, PageHeading } from "@/components/ui";
 import { formatDuration, formatMeetingDate, formatTimestamp, getMeetings } from "@/lib/meetings";
 
+function MatchedText({ text, query }: { text: string; query: string }) {
+  const term = query.trim();
+  if (!term) return <>{text}</>;
+  const parts = text.split(new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi"));
+  return <>{parts.map((part, index) => part.toLowerCase() === term.toLowerCase() ? <mark key={index}>{part}</mark> : part)}</>;
+}
+
 export function SearchResults({ initialQuery = "" }: { initialQuery?: string }) {
-  const { meetings: extraMeetings } = useMeetBrief();
-  const meetings = useMemo(() => getMeetings(extraMeetings), [extraMeetings]);
+  const { meetings: extraMeetings, summaries } = useMeetBrief();
+  const meetings = useMemo(
+    () => getMeetings(extraMeetings).map((meeting) => summaries[meeting.id] ? { ...meeting, summary: summaries[meeting.id] } : meeting),
+    [extraMeetings, summaries],
+  );
   const [query, setQuery] = useState(initialQuery);
   const [scope, setScope] = useState("Everything");
   const scopes = ["Everything", "Meetings", "Transcripts", "People", "Actions"];
@@ -55,10 +65,10 @@ export function SearchResults({ initialQuery = "" }: { initialQuery?: string }) 
         <PageHeading eyebrow="YOUR CONVERSATION MEMORY" title="Search everything" description="Find a decision, a phrase, a person, or the next step hidden in a meeting." />
         <label className="search-page-input"><Icon name="search" size={20} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Try “CSV import”, “Jordan”, or “follow up”" aria-label="Search all meetings" autoFocus /></label>
         <div className="search-filters">
-          <div className="filter-pills" role="group" aria-label="Search in">
-            {scopes.map((item) => <button key={item} className={`filter-pill ${scope === item ? "filter-pill-active" : ""}`} onClick={() => setScope(item)}>{item}</button>)}
+          <div className="filter-pills search-scope-pills" role="group" aria-label="Search in">
+            {scopes.map((item) => <button key={item} type="button" aria-pressed={scope === item} className={`filter-pill ${scope === item ? "filter-pill-active" : ""}`} onClick={() => setScope(item)}>{item}</button>)}
           </div>
-          <span className="result-count">{query.trim() ? `${result.length} ${result.length === 1 ? "result" : "results"}` : "Search across 8 conversations"}</span>
+          <span className="result-count">{query.trim() ? `${result.length} ${result.length === 1 ? "result" : "results"}` : `Search across ${meetings.length} conversations`}</span>
         </div>
         {query.trim() ? (
           result.length ? (
@@ -66,7 +76,7 @@ export function SearchResults({ initialQuery = "" }: { initialQuery?: string }) 
               {result.map((item, index) => (
                 <Link key={`${item.meeting.id}-${item.type}-${item.time ?? index}-${index}`} className="search-result-card" href={`/meetings/${item.meeting.id}${item.time !== undefined ? `?t=${item.time}` : ""}`}>
                   <span className={`search-result-type ${item.type === "Action item" ? "result-type-action" : item.type === "Transcript" ? "result-type-transcript" : ""}`}><Icon name={item.type === "Transcript" ? "file" : item.type === "Action item" ? "checkCircle" : item.type === "Participant" ? "people" : "calendar"} size={14} />{item.type}</span>
-                  <span className="search-result-text">{item.text}</span>
+                  <span className="search-result-text"><MatchedText text={item.text} query={query} /></span>
                   <span className="search-result-meeting"><strong>{item.meeting.title}</strong><span><KindBadge kind={item.meeting.kind} /> · {formatMeetingDate(item.meeting.date)} · {formatDuration(item.meeting.durationSeconds)}</span></span>
                   {item.time !== undefined && <span className="search-result-time">{formatTimestamp(item.time)} <Icon name="arrow" size={13} /></span>}
                 </Link>

@@ -1,6 +1,6 @@
 # MeetBrief
 
-MeetBrief is a polished meeting-assistant demo for reviewing conversations and following through. It brings a searchable transcript, timestamp navigation, meeting summary, decisions, action items, saved moments, and simulated clip links into one workspace.
+MeetBrief is a meeting-intelligence demo for reviewing conversations and following through. Its warm editorial workspace brings searchable transcripts, timestamp navigation, grounded summaries, decisions, action items, saved moments, and simulated clip links into one responsive product.
 
 > **Demo disclosure:** the sample recordings are simulated. The capture screen never joins a meeting, requests microphone access, captures audio/video, or produces speech recognition. Capture records only the meeting title, participant names, and notes you enter. Summary generation uses the local demo summarizer unless you configure an OpenAI-compatible API.
 
@@ -38,6 +38,9 @@ Restart the dev server after changing environment variables. Without the API key
 - **Capture walkthrough:** run a timer and create a meeting from manually supplied notes. No call is joined and no recording is made.
 - **Local persistence:** completed actions, edited summaries, saved highlights, generated clip links, and manually created meetings are stored in browser `localStorage`.
 - **Responsive layout:** collapsible navigation and layouts tuned for desktop, tablet, and phone widths.
+- **MeetBrief Intelligence design:** midnight-navy navigation, warm ivory workspace surfaces, cobalt interaction accents, and editorial display typography. Dashboard totals are calculated from the sample meetings and locally saved completion state; the weekly chart uses real sample meeting durations rather than fabricated analytics.
+- **Meeting library and knowledge pages:** filterable meeting records and quote-led highlights retain speaker, time, and source-meeting context.
+- **Thoughtful interaction states:** accessible search scopes, transcript phrase highlighting, responsive navigation, motion that respects reduced-motion preferences, and explicit sample/demo disclosures.
 
 ## Architecture
 
@@ -49,7 +52,7 @@ src/
     search/page.tsx           Global search
     share/[clipId]/page.tsx   Local demo clip page
     record/page.tsx           Manual-note capture simulation
-    globals.css               Responsive design system
+    globals.css               Design tokens, responsive system, and motion
   components/
     app-shell.tsx             Navigation and global search
     dashboard.tsx             Overview, meeting list, and highlights views

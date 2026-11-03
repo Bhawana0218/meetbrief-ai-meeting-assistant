@@ -274,7 +274,7 @@ export function MeetingWorkspace({ meetingId }: { meetingId: string }) {
         <div className="back-link-row"><Link href="/meetings"><Icon name="arrowLeft" size={16} /> All meetings</Link><span className="meeting-breadcrumb-separator">/</span><span>{meeting.title}</span></div>
         <div className="meeting-detail-heading">
           <div className="meeting-title-block">
-            <div className="meeting-title-tags"><KindBadge kind={meeting.kind} /><span className="meeting-platform"><span className="platform-dot" />{meeting.platform}</span></div>
+            <div className="meeting-title-tags"><KindBadge kind={meeting.kind} /><span className="meeting-platform"><span className="platform-dot" />{meeting.platform}</span><span className="meeting-record-status"><span /> NOTES READY</span></div>
             <h1>{meeting.title}</h1>
             <div className="meeting-detail-meta"><span><Icon name="calendar" size={15} />{formatLongDate(meeting.date)}</span><span><Icon name="clock" size={15} />{formatDuration(meeting.durationSeconds)}</span><span><AvatarStack participants={meeting.participants} limit={4} />{meeting.participants.length} participants</span></div>
           </div>
@@ -316,7 +316,7 @@ export function MeetingWorkspace({ meetingId }: { meetingId: string }) {
                   <div className={`transcript-entry ${isActive ? "transcript-entry-active" : ""}`} key={line.id} ref={(element) => { transcriptRefs.current[line.id] = element; }}>
                     <button className="transcript-time" onClick={() => seekTo(line.seconds, line.id)} aria-label={`Jump to ${formatTimestamp(line.seconds)}`}>{formatTimestamp(line.seconds)}</button>
                     <div className="transcript-entry-content">
-                      <div className="transcript-speaker">{person && <PersonAvatar person={person} />}<strong>{line.speaker}</strong>{isActive && <span className="speaking-indicator"><i /><i /><i /></span>}</div>
+                        <div className="transcript-speaker">{person && <PersonAvatar person={person} />}<strong>{line.speaker}</strong>{person && <span className="transcript-role">{person.role}</span>}{isActive && <span className="speaking-indicator" aria-label="Current playback position"><i /><i /><i /></span>}</div>
                       <p><HighlightText text={line.text} query={search} /></p>
                     </div>
                   </div>

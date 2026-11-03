@@ -44,10 +44,11 @@ export function MeetingCard({ meeting, compact = false }: { meeting: Meeting; co
       </div>
       <h3>{meeting.title}</h3>
       <p className="meeting-card-summary">{meeting.summary.headline}</p>
+      {meeting.summary.bullets[0] && <p className="meeting-card-context"><span>KEY TAKEAWAY</span>{meeting.summary.bullets[0]}</p>}
       <div className="meeting-card-bottom">
         <AvatarStack participants={meeting.participants} />
-        <div className="meeting-meta"><Icon name="clock" size={14} />{formatDuration(meeting.durationSeconds)}</div>
-        <span className="card-actions-count"><Icon name="checkCircle" size={14} />{actionCount}</span>
+        <span className="meeting-card-duration"><Icon name="clock" size={13} />{formatDuration(meeting.durationSeconds)}</span>
+        <span className="card-actions-count"><Icon name="checkCircle" size={14} />{actionCount} next steps</span>
       </div>
     </Link>
   );
