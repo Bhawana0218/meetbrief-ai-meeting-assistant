@@ -262,6 +262,11 @@ function Commit-CapturedLog {
     if ($LASTEXITCODE -ne 0) {
         throw "Could not commit captured log: $($gitOutput -join [Environment]::NewLine)"
     }
+
+    $gitOutput = & git -C $RepoRoot push 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "Could not push captured log: $($gitOutput -join [Environment]::NewLine)"
+    }
 }
 
 try {

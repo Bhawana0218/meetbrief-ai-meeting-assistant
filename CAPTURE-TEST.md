@@ -48,4 +48,4 @@ The initial bare canary prompt caused the agent to ask for clarification instead
 
 The original setup conversation began before the hook was installed and therefore was not captured automatically. No transcript was backfilled or manually added. Capture verification passed before MeetBrief application development began.
 
-Completed application-turn logs are now committed individually by the stop hook after each response, keeping the capture history in the repository as work progresses.
+Completed application-turn logs are committed individually by the stop hook after each response and pushed to the configured upstream. A commit or push failure is reported by the hook rather than silently dropping the capture.

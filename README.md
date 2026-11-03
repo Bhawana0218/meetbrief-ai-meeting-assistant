@@ -88,4 +88,4 @@ npm run build
 
 ## Agent capture evidence
 
-The repository hook and original two canary logs are documented in [CAPTURE-TEST.md](./CAPTURE-TEST.md). The `.agent-logs/` directory is intentionally tracked.
+The repository hook and original two canary logs are documented in [CAPTURE-TEST.md](./CAPTURE-TEST.md). The `.agent-logs/` directory is intentionally tracked; the stop hook commits and pushes each completed turn’s log.
