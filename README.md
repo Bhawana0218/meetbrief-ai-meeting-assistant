@@ -4,6 +4,8 @@ MeetBrief is a polished meeting-assistant demo for reviewing conversations and f
 
 > **Demo disclosure:** the sample recordings are simulated. The capture screen never joins a meeting, requests microphone access, captures audio/video, or produces speech recognition. Capture records only the meeting title, participant names, and notes you enter. Summary generation uses the local demo summarizer unless you configure an OpenAI-compatible API.
 
+> **Live demo:** [meetbrief-ai-meeting-assistant.vercel.app](https://meetbrief-ai-meeting-assistant.vercel.app/). It runs without an API key in clearly labeled demo-summary mode.
+
 ## Run locally
 
 Requirements: Node.js 20.9 or later and npm.
@@ -76,6 +78,8 @@ npm run build
 2. Keep the default build command (`npm run build`) and output settings.
 3. Optionally add `OPENAI_API_KEY`, `OPENAI_BASE_URL`, and `OPENAI_MODEL` in the Vercel project’s server-side environment-variable settings. Do not add a `NEXT_PUBLIC_` prefix to the API key.
 4. Deploy. The demo works without a key; generated browser data remains in each visitor’s own browser and is not shared with other users.
+
+The current production deployment was published with the Vercel CLI. Automatic GitHub deployments are not connected: Vercel requires a GitHub login connection on the account before it can link the repository. Complete that connection in Vercel’s account settings, then connect the Git repository from the project’s Git settings to deploy automatically on pushes.
 
 ## Under-five-minute walkthrough
 
